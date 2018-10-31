@@ -9,6 +9,22 @@ exports.helloWorld = functions.https.onRequest((request, response) => {
  response.send("Hello from Firebase!");
 });
 
+exports.callback = functions.https.onRequest((req, res) => {
+  // const original = req.query.text;
+  // res.status(200).send({ 'hub.challenge': req.query['hub.challenge'] });
+  const store = admin.firestore();
+  store.collection("users").doc(Math.floor((Math.random() * 10))).set({
+    body: req.body
+})
+.then(function() {
+    return res.send("Document successfully written!");
+})
+.catch(function(error) {
+    return console.error("Error writing document: ", error);
+});
+// const c = req.query['hub.challenge'];
+
+});
 
 exports.addMessage = functions.https.onRequest((req, res) => {
   const original = req.query.text;
@@ -22,7 +38,7 @@ exports.addMessage = functions.https.onRequest((req, res) => {
 .catch(function(error) {
     return console.error("Error writing document: ", error);
 });
-
+});
 
 
 
@@ -33,4 +49,3 @@ exports.addMessage = functions.https.onRequest((req, res) => {
   //   // Redirect with 303 SEE OTHER to the URL of the pushed object in the Firebase console.
   //   return res.redirect(303, snapshot.ref.toString());
   // });
-});
