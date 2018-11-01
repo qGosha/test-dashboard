@@ -5,15 +5,25 @@ admin.initializeApp();
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
 //
-exports.helloWorld = functions.https.onRequest((request, response) => {
- response.send("Hello from Firebase!");
+exports.getInfo = functions.https.onRequest((req, res) => {
+  const store = admin.firestore();
+  const original = req.query.text;
+  var docRef = store.collection("users").doc(original);
+  docRef.get().then(function(doc) {
+      return res.send(doc.data());
+})
+  .catch(function(error) {
+      return res.send("Error: ", error);
+  });
 });
 
 exports.callback = functions.https.onRequest((req, res) => {
   // const original = req.query.text;
-  // res.status(200).send({ 'hub.challenge': req.query['hub.challenge'] });
+  if(req.query['hub.challenge']) {
+    return res.status(200).send({ 'hub.challenge': req.query['hub.challenge'] });
+  }
   const store = admin.firestore();
-  store.collection("users").doc(Math.floor((Math.random() * 10))).set({
+  store.collection("users").doc(Math.floor((Math.random() * 10)) + 'test').set({
     body: req.body
 })
 .then(function() {
