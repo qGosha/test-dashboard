@@ -1,7 +1,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
-
+var convert = require('xml-js');
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
 //
@@ -20,18 +20,20 @@ exports.getInfo = functions.https.onRequest((req, res) => {
 exports.callback = functions.https.onRequest((req, res) => {
   // const original = req.query.text;
   if(req.query['hub.challenge']) {
-    return res.status(200).send({ 'hub.challenge': req.query['hub.challenge'] });
+     res.status(200).send({ 'hub.challenge': req.query['hub.challenge'] });
+  } else {
+    const store = admin.firestore();
+    const load = convert.xml2json(req.body, {compact: true, spaces: 4});
+    store.collection("users").doc((Math.random() * 10) + 'test').set({
+      body: req.body,
+      load: load
+  }).then(function() {
+      return console.log("sdgsdgsdg");
+  }).catch(function(error) {
+      return console.error("Error writing document: ", error);
+  });
   }
-  const store = admin.firestore();
-  store.collection("users").doc(Math.floor((Math.random() * 10)) + 'test').set({
-    body: req.body
-})
-.then(function() {
-    return res.send("Document successfully written!");
-})
-.catch(function(error) {
-    return console.error("Error writing document: ", error);
-});
+
 // const c = req.query['hub.challenge'];
 
 });
