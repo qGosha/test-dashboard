@@ -18,7 +18,16 @@ const app = firebase.initializeApp({
   databaseURL: "https://test-bbac8.firebaseio.com",
   projectId: "test-bbac8",
   storageBucket: "test-bbac8.appspot.com",
-  messagingSenderId: "143423192758"
+  messagingSenderId: "143423192758",
+
+  clientId: "963468815245-4clmmevmre64udfub6pn2rpk0vs7odnf.apps.googleusercontent.com",
+  scopes: [
+             "https://www.googleapis.com/auth/youtube.force-ssl",
+             "https://www.googleapis.com/auth/youtube.upload"
+    ],
+    discoveryDocs: [
+    "https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest"
+    ]  
 });
 
 const db = firebase.firestore();

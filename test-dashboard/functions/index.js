@@ -24,19 +24,26 @@ exports.callback = functions.https.onRequest((req, res) => {
   } else {
     const store = admin.firestore();
     const load = convert.xml2json(req.body, {compact: true, spaces: 4});
-    store.collection("users").doc((Math.random() * 10) + 'test').set({
+    return store.collection("users").doc((Math.random() * 10) + 'test').set({
       body: req.body,
       load: load
   }).then(function() {
-      return console.log("sdgsdgsdg");
+      res.end();
   }).catch(function(error) {
-      return console.error("Error writing document: ", error);
+      res.end("Error writing document: ", error);
   });
   }
-
-// const c = req.query['hub.challenge'];
-
 });
+
+// exports.deleteVideo = functions.firestore
+//     .document('users/{userId}')
+//     .onDelete((snap, context) => {
+//       // Get an object representing the document prior to deletion
+//       // e.g. {'name': 'Marie', 'age': 66}
+//       const deletedValue = snap.data();
+//
+//       // perform desired operations ...
+//     });
 
 exports.addMessage = functions.https.onRequest((req, res) => {
   const original = req.query.text;
