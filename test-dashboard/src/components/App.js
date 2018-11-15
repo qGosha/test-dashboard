@@ -9,26 +9,12 @@ import 'firebase/firestore';
 import * as actions from '../actions';
 import {connect} from 'react-redux';
 import history  from '../helpers/history';
+import { config } from '../helpers/config';
+import {List} from './list';
 
 
 
-const app = firebase.initializeApp({
-  apiKey: "AIzaSyDeki-PHjQHGKruxXz99PdOJ-QORzuPVNw",
-  authDomain: "test-bbac8.firebaseapp.com",
-  databaseURL: "https://test-bbac8.firebaseio.com",
-  projectId: "test-bbac8",
-  storageBucket: "test-bbac8.appspot.com",
-  messagingSenderId: "143423192758",
-
-  clientId: "963468815245-4clmmevmre64udfub6pn2rpk0vs7odnf.apps.googleusercontent.com",
-  scopes: [
-             "https://www.googleapis.com/auth/youtube.force-ssl",
-             "https://www.googleapis.com/auth/youtube.upload"
-    ],
-    discoveryDocs: [
-    "https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest"
-    ]  
-});
+const app = firebase.initializeApp(config);
 
 const db = firebase.firestore();
 
@@ -38,10 +24,40 @@ db.settings({
 
 class App extends Component {
 
+  loadYoutubeApi(user) {
+    if(!user) {
+      return this.props.isSignedIn(user);
+    }
+      const script = document.createElement("script");
+      script.type = 'text/javascript';
+      script.src = 'https://apis.google.com/js/api.js';
+      script.onload = () => {
+           window.gapi.load('client:auth2', () => {
+             console.log({
+               apiKey: config.apiKey,
+               clientId: config.clientId,
+               discoveryDocs: config.discoveryDocs,
+               scope: config.scopes.join(' '),
+             });
+             window.gapi.client.init({
+               apiKey: config.apiKey,
+               clientId: config.clientId,
+               discoveryDocs: config.discoveryDocs,
+               scope: config.scopes.join(' '),
+             }).then(() => {
+                if (window.gapi.auth2.getAuthInstance().isSignedIn.get()) {
+                  window.gapi.client.load('youtube', 'v3', () =>  this.props.isSignedIn(user));
+                } else {
+                  firebase.auth().signOut();
+                }
+             })
+           });
+         };
+      document.body.appendChild(script);
+    }
+
   componentDidMount() {
-   this.unregisterAuthObserver = firebase.auth().onAuthStateChanged(
-       (user) => this.props.isSignedIn(user)
-   );
+   this.unregisterAuthObserver = firebase.auth().onAuthStateChanged((user) => this.loadYoutubeApi(user));
  }
 
  componentWillUnmount() {
@@ -54,10 +70,10 @@ class App extends Component {
     return (
       <Router history={history}>
        <Switch>
-        <PrivateRoute exact path='/' auth={auth} component={Dashboard}/>
-        <PrivateRoute exact path='/dashboard' auth={auth} component={Dashboard}/>
+        <PrivateRoute exact path='/' auth={auth} app={history} component={Dashboard}/>
+        <PrivateRoute exact path='/dashboard' app={history} auth={auth} component={Dashboard}/>
+        <PrivateRoute exact path='/admin' app={history} auth={auth} component={List}/>
         <EnterRoute exact path='/login' auth={auth} component={Login}/>
-        <Route component={() => <div>404 Missing</div>} />
        </Switch>
       </Router>
     );

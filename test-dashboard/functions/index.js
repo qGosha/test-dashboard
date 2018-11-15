@@ -2,36 +2,46 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
 var convert = require('xml-js');
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-exports.getInfo = functions.https.onRequest((req, res) => {
-  const store = admin.firestore();
-  const original = req.query.text;
-  var docRef = store.collection("users").doc(original);
-  docRef.get().then(function(doc) {
-      return res.send(doc.data());
-})
-  .catch(function(error) {
-      return res.send("Error: ", error);
-  });
-});
 
 exports.callback = functions.https.onRequest((req, res) => {
-  // const original = req.query.text;
   if(req.query['hub.challenge']) {
-     res.status(200).send({ 'hub.challenge': req.query['hub.challenge'] });
+    res.status(200).send(req.query['hub.challenge']);
+    // res.status(200).json({ 'hub.challenge': req.query['hub.challenge'] });
   } else {
     const store = admin.firestore();
     const load = convert.xml2json(req.body, {compact: true, spaces: 4});
-    return store.collection("users").doc((Math.random() * 10) + 'test').set({
-      body: req.body,
-      load: load
-  }).then(function() {
-      res.end();
-  }).catch(function(error) {
-      res.end("Error writing document: ", error);
-  });
+    const parsed = JSON.parse(load);
+    console.log(parsed);
+
+    if(parsed) {
+      if(parsed.feed['at:deleted-entry']) {
+        const id = parsed.feed['at:deleted-entry']._attributes.ref.replace('yt:video:', '');
+        console.log(id);
+        return store.collection('videos').doc(id).delete().then(() => {
+          return res.end();
+        }).catch( (error) => {
+          return res.end("Error removing document: ", error);
+      });
+    }
+      const converted = parsed.feed.entry;
+      const id = converted['yt:videoId']._text || 'id';
+      const title = converted.title._text || 'title';
+      const author = converted.author.name._text || 'author';
+      const link = converted.link._attributes.href || 'link';
+      const publishedAt = converted.published._text || 'publ';
+      const updatedAt = converted.updated._text || 'updated';
+      return store.collection("videos").doc(id).set({
+      author,
+      title,
+      link,
+      publishedAt,
+      updatedAt
+    }).then(() => {
+        return res.end();
+    }).catch( (error) => {
+        return res.end("Error writing document: ", error);
+    });
+  }
   }
 });
 
@@ -44,27 +54,3 @@ exports.callback = functions.https.onRequest((req, res) => {
 //
 //       // perform desired operations ...
 //     });
-
-exports.addMessage = functions.https.onRequest((req, res) => {
-  const original = req.query.text;
-  const store = admin.firestore();
-  store.collection("users").doc(original).set({
-    name: original
-})
-.then(function() {
-    return res.send("Document successfully written!");
-})
-.catch(function(error) {
-    return console.error("Error writing document: ", error);
-});
-});
-
-
-
-  // // Grab the text parameter.
-  // const original = req.query.text;
-  // // Push the new message into the Realtime Database using the Firebase Admin SDK.
-  // return admin.firestore().ref('/messages').push({original: original}).then((snapshot) => {
-  //   // Redirect with 303 SEE OTHER to the URL of the pushed object in the Firebase console.
-  //   return res.redirect(303, snapshot.ref.toString());
-  // });
