@@ -12,16 +12,18 @@ export var UploadVideo = function() {
 };
 
 
-UploadVideo.prototype.uploadFile = function(file) {
+UploadVideo.prototype.uploadFile = function(file, description, title, tags, allVideos) {
   var metadata = {
+    contentDetails: true,
+    id: true,
     snippet: {
-      title: 'Teeest',
-      description: 'New video',
-      tags: this.tags,
+      title: title,
+      description: description,
+      tags: tags,
       categoryId: 22
     },
     status: {
-      privacyStatus: 'private'
+      privacyStatus: 'unlisted'
     }
   };
   var uploader = new MediaUploader({
@@ -38,7 +40,8 @@ UploadVideo.prototype.uploadFile = function(file) {
         var errorResponse = JSON.parse(data);
         message = errorResponse.error.message;
       } finally {
-        alert(message);
+        this.settingState('error', message);
+        this.settingState('uploadingInProcess', false)
       }
     }.bind(this),
     onProgress: function(data) {
@@ -49,7 +52,7 @@ UploadVideo.prototype.uploadFile = function(file) {
       var estimatedSecondsRemaining = (totalBytes - bytesUploaded) / bytesPerSecond;
       var percentageComplete = (bytesUploaded * 100) / totalBytes;
       console.log(percentageComplete, estimatedSecondsRemaining, bytesPerSecond);
-      this.settingState('dermao', false)
+      this.settingState('percentageComplete', percentageComplete)
 
     }.bind(this),
 
@@ -57,8 +60,15 @@ UploadVideo.prototype.uploadFile = function(file) {
       var uploadResponse = JSON.parse(data);
       this.videoId = uploadResponse.id;
       console.log(this.videoId);
+      allVideos.push(uploadResponse);
+      this.settingState('allVideos', allVideos);
+      this.settingState('title', '');
+      this.settingState('description', '');
+      this.settingState('tags', '');
+      this.settingState('uploadingInProcess', false)
     }.bind(this)
   });
   this.uploadStartTime = Date.now();
+  this.settingState('uploadingInProcess', true)
   uploader.upload();
 };

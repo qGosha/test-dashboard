@@ -10,8 +10,6 @@ import * as actions from '../actions';
 import {connect} from 'react-redux';
 import history  from '../helpers/history';
 import { config } from '../helpers/config';
-import {List} from './list';
-
 
 
 const app = firebase.initializeApp(config);
@@ -72,7 +70,6 @@ class App extends Component {
        <Switch>
         <PrivateRoute exact path='/' auth={auth} app={history} component={Dashboard}/>
         <PrivateRoute exact path='/dashboard' app={history} auth={auth} component={Dashboard}/>
-        <PrivateRoute exact path='/admin' app={history} auth={auth} component={List}/>
         <EnterRoute exact path='/login' auth={auth} component={Login}/>
        </Switch>
       </Router>

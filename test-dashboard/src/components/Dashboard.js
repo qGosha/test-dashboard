@@ -1,5 +1,4 @@
 import React, { Component, Fragment } from "react";
-import { Admin, Resource, ListGuesser  } from 'react-admin';
 import {connect} from 'react-redux';
 import * as actions from '../actions';
 import { withStyles } from '@material-ui/core/styles';
@@ -8,30 +7,22 @@ import firebase from 'firebase';
 import Dropzone from 'react-dropzone';
 import 'firebase/auth';
 import history from '../helpers/history';
-import {UploadVideo} from '../helpers/mediaUploader';
-// require ('../helpers/corsUploader');
-// import UploadVideo from '../helpers/corsUploader';
-// import jsonServerProvider from 'ra-data-json-server';
-// import {List} from './list';
-// const dataProviderr = jsonServerProvider('http://jsonplaceholder.typicode.com');
-// class Dashboard extends Component {
-//   render() {
-//     return (
-//       <Admin dataProvider={dataProvider} authProvider={authProvider} loginPage={Login} customReducers={{ auth: authReducer }}>
-//           <Resource name="videos" list={VideoList} show={VideoShow} create={VideoCreate} edit={VideoEdit} />
-//       </Admin>
-//     )
-//   }
-// }
-//
-// const mapStateToProps = (state) => ({
-//   auth: state.auth,
-// });
-//
-// export default connect(mapStateToProps, {action: 'svsv'})(Dashboard);
+import { UploadVideo } from '../helpers/mediaUploader';
+import TextField from '@material-ui/core/TextField';
+import MyVideos from './MyVideos'
 
 const styles = {
-
+  container: {
+   display: 'flex',
+   flexWrap: 'wrap',
+ },
+ textField: {
+   marginLeft: '5px',
+   marginRight: '5px',
+ },
+ uploadB: {
+   display: 'block'
+ }
 };
 
 
@@ -41,6 +32,11 @@ class Dashboard extends Component {
     allVideos: [],
     myChannel: false,
     uploadingInProcess: false,
+    percentageComplete: 0,
+    error: false,
+    description: '',
+    title: '',
+    tags: ''
   }
   getChannels = this.getChannels.bind(this);
   uploadVideo = this.uploadVideo.bind(this);
@@ -49,37 +45,33 @@ class Dashboard extends Component {
   componentDidMount() {
     this.getChannels();
   }
-  // addUser = async () => {
-  //   try {
-  //     const doc = await db.collection("users").add({
-  //         first: "Ada",
-  //         last: "Lovelace",
-  //         born: 1815
-  //     });
-  //     console.log(doc);
-  //   } catch (err) {
-  //     console.log('There was an error' + err)
-  //   }
-  // }
+
   settingState(prop, val) {
     this.setState({[prop]: val})
   }
+
   async uploadVideo(file) {
+    const { description, title, tags, allVideos} = this.state;
     UploadVideo.prototype.settingState = this.settingState;
-    UploadVideo.prototype.uploadFile(file, this.settingState);
+    UploadVideo.prototype.uploadFile(file, description, title, tags, allVideos);
     }
+
   deleteAllVideos() {
     let promiseArr = [];
     this.state.allVideos.map( video => {
-      promiseArr.push( window.gapi.client.youtube.videos.delete({id: video.snippet.resourceId.videoId}) );
+      promiseArr.push( window.gapi.client.youtube.videos.delete({id: video.snippet.resourceId ? video.snippet.resourceId.videoId : video.id}) );
     });
-    Promise.all(promiseArr).then(res => console.log(res))
+    Promise.all(promiseArr).then(res => {
+      if(res) {
+        this.setState({allVideos: []});
+      }
+    }).catch( error => this.setState({error}))
   }
 
    async getChannels() {
      try {
        const channelsResponse = await window.gapi.client.youtube.channels.list({
-         part:'contentDetails, topicDetails, contentOwnerDetails',
+         part:'contentDetails',
          mine: true,
        });
        const channels = channelsResponse.result.items;
@@ -89,7 +81,7 @@ class Dashboard extends Component {
          let result;
           do {
            result = await window.gapi.client.youtube.playlistItems.list({
-             part:'snippet',
+             part:'snippet, id',
              playlistId: item.contentDetails.relatedPlaylists.uploads,
              maxResults: 50,
              pageToken: nextPageToken
@@ -106,17 +98,47 @@ class Dashboard extends Component {
   }
   render() {
      const { app } = this.props;
-     const dataP = (props) => <dataProvider {...props} data={this.state.allVideos}/>
     return (
       <div>
       <h2>Dash</h2>
-      <Button variant="contained" color="primary" onClick={() => firebase.auth().signOut()}>admin</Button>
       <Button variant="contained" color="primary" onClick={() => firebase.auth().signOut()}>Sign-out</Button>
       <Button variant="contained" color="primary" onClick={this.getChannels}>Get channels</Button>
       <Button variant="contained" color="primary" onClick={this.deleteAllVideos}>Delete all videos</Button>
 
       <div>
       <h3>My videos</h3>
+      <form className={styles.container} noValidate autoComplete="off">
+        <TextField
+          required
+          id="outlined-required"
+          label="Title"
+          className={styles.textField}
+          value={this.state.title}
+          onChange={(e) => this.settingState('title', e.target.value)}
+          margin="normal"
+          variant="outlined"
+        />
+        <TextField
+          required
+          id="outlined-required"
+          label="Description"
+          value={this.state.description}
+          onChange={(e) => this.settingState('description', e.target.value)}
+          className={styles.textField}
+          margin="normal"
+          variant="outlined"
+        />
+        <TextField
+          required
+          id="outlined-required"
+          label="Tags"
+          value={this.state.tags}
+          onChange={(e) => this.settingState('tags', e.target.value)}
+          className={styles.textField}
+          margin="normal"
+          variant="outlined"
+        />
+
       <input
         accept="video/image"
         style={{display: 'none'}}
@@ -127,13 +149,14 @@ class Dashboard extends Component {
         onChange={(e) => this.uploadVideo(e.target.files[0]) }
 
       />
-      <label htmlFor="raised-button-file">
-      <Button variant="contained" component="span" variant="contained" color="secondary">
+      <label htmlFor="raised-button-file" style={styles.uploadB}>
+      <Button disabled={this.state.uploadingInProcess} variant="contained" component="span" variant="contained" color="secondary">
         Upload
       </Button>
       </label>
-      // <span> { this.state.file ? this.state.file[0].name : null }</span>
+      </form>
       </div>
+      <MyVideos allVideos={this.state.allVideos} />
       </div>
     )
   }
