@@ -1,37 +1,12 @@
-// require ('./mediaUploader');
-
-/*
-Copyright 2015 Google Inc. All Rights Reserved.
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-  http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 var DRIVE_UPLOAD_URL = 'https://www.googleapis.com/upload/drive/v2/files/';
 
 
-/**
- * Helper for implementing retries with backoff. Initial retry
- * delay is 1 second, increasing by 2x (+jitter) for subsequent retries
- *
- * @constructor
- */
 var RetryHandler = function() {
   this.interval = 1000; // Start at one second
   this.maxInterval = 60 * 1000; // Don't wait longer than a minute
 };
 
-/**
- * Invoke the function after waiting
- *
- * @param {function} fn Function to invoke
- */
+
 RetryHandler.prototype.retry = function(fn) {
   setTimeout(fn, this.interval);
   this.interval = this.nextInterval_();
@@ -67,33 +42,7 @@ RetryHandler.prototype.getRandomInt_ = function(min, max) {
 };
 
 
-/**
- * Helper class for resumable uploads using XHR/CORS. Can upload any Blob-like item, whether
- * files or in-memory constructs.
- *
- * @example
- * var content = new Blob(["Hello world"], {"type": "text/plain"});
- * var uploader = new MediaUploader({
- *   file: content,
- *   token: accessToken,
- *   onComplete: function(data) { ... }
- *   onError: function(data) { ... }
- * });
- * uploader.upload();
- *
- * @constructor
- * @param {object} options Hash of options
- * @param {string} options.token Access token
- * @param {blob} options.file Blob-like item to upload
- * @param {string} [options.fileId] ID of file if replacing
- * @param {object} [options.params] Additional query parameters
- * @param {string} [options.contentType] Content-type, if overriding the type of the blob.
- * @param {object} [options.metadata] File metadata
- * @param {function} [options.onComplete] Callback for when upload is complete
- * @param {function} [options.onProgress] Callback for status for the in-progress upload
- * @param {function} [options.onError] Callback if upload fails
- */
- var MediaUploader = function(options) {
+ export var MediaUploader = function(options) {
   var noop = function() {};
   this.file = options.file;
   this.contentType = options.contentType || this.file.type || 'application/octet-stream';
@@ -152,7 +101,7 @@ MediaUploader.prototype.upload = function() {
 MediaUploader.prototype.sendFile_ = function() {
   var content = this.file;
   var end = this.file.size;
-
+  console.log(end)
   if (this.offset || this.chunkSize) {
     // Only bother to slice the file if we're either resuming or uploading in chunks
     if (this.chunkSize) {
@@ -280,141 +229,3 @@ MediaUploader.prototype.buildUrl_ = function(id, params, baseUrl) {
   }
   return url;
 };
-
-
-var UploadVideo = function() {
-  this.tags = ['youtube-cors-upload'];
-
-  this.categoryId = 22;
-
-  this.videoId = '';
-
-  this.uploadStartTime = 0;
-};
-
-
-
-
-// UploadVideo.prototype.ready = function(accessToken) {
-//   this.accessToken = accessToken;
-//   this.gapi = gapi;
-//   this.authenticated = true;
-//   this.gapi.client.request({
-//     path: '/youtube/v3/channels',
-//     params: {
-//       part: 'snippet',
-//       mine: true
-//     },
-//     callback: function(response) {
-//       if (response.error) {
-//         console.log(response.error.message);
-//       } else {
-//         console.log(response);
-//       }
-//     }.bind(this)
-//   });
-//   $('#button').on("click", this.handleUploadClicked.bind(this));
-// };
-
-/**
- * Uploads a video file to YouTube.
- *
- * @method uploadFile
- * @param {object} file File object corresponding to the video to upload.
- */
-UploadVideo.prototype.uploadFile = function(file) {
-  var metadata = {
-    snippet: {
-      title: 'Teeest',
-      description: 'New video',
-      tags: this.tags,
-      categoryId: 22
-    },
-    status: {
-      privacyStatus: 'private'
-    }
-  };
-  var uploader = new MediaUploader({
-    baseUrl: 'https://www.googleapis.com/upload/youtube/v3/videos',
-    file: file,
-    token: this.accessToken,
-    metadata: metadata,
-    params: {
-      part: Object.keys(metadata).join(',')
-    },
-    onError: function(data) {
-      var message = data;
-      // Assuming the error is raised by the YouTube API, data will be
-      // a JSON string with error.message set. That may not be the
-      // only time onError will be raised, though.
-      try {
-        var errorResponse = JSON.parse(data);
-        message = errorResponse.error.message;
-      } finally {
-        alert(message);
-      }
-    }.bind(this),
-    onProgress: function(data) {
-      var currentTime = Date.now();
-      var bytesUploaded = data.loaded;
-      var totalBytes = data.total;
-      // The times are in millis, so we need to divide by 1000 to get seconds.
-      var bytesPerSecond = bytesUploaded / ((currentTime - this.uploadStartTime) / 1000);
-      var estimatedSecondsRemaining = (totalBytes - bytesUploaded) / bytesPerSecond;
-      var percentageComplete = (bytesUploaded * 100) / totalBytes;
-
-    }.bind(this),
-
-    onComplete: function(data) {
-      var uploadResponse = JSON.parse(data);
-      this.videoId = uploadResponse.id;
-      console.log(this.videoId);
-      // $('#video-id').text(this.videoId);
-      // $('.post-upload').show();
-      // this.pollForVideoStatus();
-    }.bind(this)
-  });
-  // This won't correspond to the *exact* start of the upload, but it should be close enough.
-  this.uploadStartTime = Date.now();
-  uploader.upload();
-};
-
-// UploadVideo.prototype.handleUploadClicked = function() {
-//   $('#button').attr('disabled', true);
-//   this.uploadFile($('#file').get(0).files[0]);
-// };
-
-// UploadVideo.prototype.pollForVideoStatus = function() {
-//   this.gapi.client.request({
-//     path: '/youtube/v3/videos',
-//     params: {
-//       part: 'status,player',
-//       id: this.videoId
-//     },
-//     callback: function(response) {
-//       if (response.error) {
-//         // The status polling failed.
-//         console.log(response.error.message);
-//         setTimeout(this.pollForVideoStatus.bind(this), STATUS_POLLING_INTERVAL_MILLIS);
-//       } else {
-//         var uploadStatus = response.items[0].status.uploadStatus;
-//         switch (uploadStatus) {
-//           // This is a non-final status, so we need to poll again.
-//           case 'uploaded':
-//             $('#post-upload-status').append('<li>Upload status: ' + uploadStatus + '</li>');
-//             setTimeout(this.pollForVideoStatus.bind(this), STATUS_POLLING_INTERVAL_MILLIS);
-//             break;
-//           // The video was successfully transcoded and is available.
-//           case 'processed':
-//             $('#player').append(response.items[0].player.embedHtml);
-//             $('#post-upload-status').append('<li>Final status.</li>');
-//             break;
-//           // All other statuses indicate a permanent transcoding failure.
-//           default:
-//             $('#post-upload-status').append('<li>Transcoding failed.</li>');
-//             break;
-//         }
-//       }
-//     }.bind(this)
-//   });
-// };
