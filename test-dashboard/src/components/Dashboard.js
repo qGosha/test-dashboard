@@ -9,6 +9,7 @@ import 'firebase/auth';
 import history from '../helpers/history';
 import { UploadVideo } from '../helpers/mediaUploader';
 import TextField from '@material-ui/core/TextField';
+import CircularProgress from '@material-ui/core/CircularProgress';
 import MyVideos from './MyVideos'
 
 const styles = {
@@ -21,7 +22,12 @@ const styles = {
    marginRight: '5px',
  },
  uploadB: {
-   display: 'block'
+   display: 'block',
+   marginRight: '1rem'
+ },
+ btnContainer: {
+   display: 'flex',
+   flexDirection: 'row',
  }
 };
 
@@ -45,10 +51,12 @@ class Dashboard extends Component {
   componentDidMount() {
     this.getChannels();
   }
-
-  settingState(prop, val) {
-    this.setState({[prop]: val})
+  settingState(obj) {
+    this.setState(obj)
   }
+  // settingState(prop, val) {
+  //   this.setState({[prop]: val})
+  // }
 
   async uploadVideo(file) {
     const { description, title, tags, allVideos} = this.state;
@@ -114,7 +122,7 @@ class Dashboard extends Component {
           label="Title"
           className={styles.textField}
           value={this.state.title}
-          onChange={(e) => this.settingState('title', e.target.value)}
+          onChange={(e) => this.settingState({'title': e.target.value})}
           margin="normal"
           variant="outlined"
         />
@@ -123,7 +131,7 @@ class Dashboard extends Component {
           id="outlined-required"
           label="Description"
           value={this.state.description}
-          onChange={(e) => this.settingState('description', e.target.value)}
+          onChange={(e) => this.settingState({'description': e.target.value})}
           className={styles.textField}
           margin="normal"
           variant="outlined"
@@ -133,7 +141,7 @@ class Dashboard extends Component {
           id="outlined-required"
           label="Tags"
           value={this.state.tags}
-          onChange={(e) => this.settingState('tags', e.target.value)}
+          onChange={(e) => this.settingState({'tags': e.target.value})}
           className={styles.textField}
           margin="normal"
           variant="outlined"
@@ -145,15 +153,17 @@ class Dashboard extends Component {
         id="raised-button-file"
         multiple
         type="file"
-        // onChange={(e) =>this.setState({file: e.target.files}, () => this.uploadVideo()) }
         onChange={(e) => this.uploadVideo(e.target.files[0]) }
 
       />
-      <label htmlFor="raised-button-file" style={styles.uploadB}>
-      <Button disabled={this.state.uploadingInProcess} variant="contained" component="span" variant="contained" color="secondary">
-        Upload
-      </Button>
-      </label>
+      <div style={styles.btnContainer}>
+        <label htmlFor="raised-button-file" style={styles.uploadB}>
+          <Button disabled={this.state.uploadingInProcess} variant="contained" component="span" variant="contained" color="secondary">
+            Upload
+          </Button>
+        </label>
+        {this.state.uploadingInProcess ? <CircularProgress variant="static" value={this.state.percentageComplete} /> : null}
+      </div>
       </form>
       </div>
       <MyVideos allVideos={this.state.allVideos} />

@@ -40,8 +40,10 @@ UploadVideo.prototype.uploadFile = function(file, description, title, tags, allV
         var errorResponse = JSON.parse(data);
         message = errorResponse.error.message;
       } finally {
-        this.settingState('error', message);
-        this.settingState('uploadingInProcess', false)
+        this.settingState({
+          'error': message,
+          'uploadingInProcess': false
+        });
       }
     }.bind(this),
     onProgress: function(data) {
@@ -52,8 +54,7 @@ UploadVideo.prototype.uploadFile = function(file, description, title, tags, allV
       var estimatedSecondsRemaining = (totalBytes - bytesUploaded) / bytesPerSecond;
       var percentageComplete = (bytesUploaded * 100) / totalBytes;
       console.log(percentageComplete, estimatedSecondsRemaining, bytesPerSecond);
-      this.settingState('percentageComplete', percentageComplete)
-
+      this.settingState({'percentageComplete': percentageComplete})
     }.bind(this),
 
     onComplete: function(data) {
@@ -61,14 +62,16 @@ UploadVideo.prototype.uploadFile = function(file, description, title, tags, allV
       this.videoId = uploadResponse.id;
       console.log(this.videoId);
       allVideos.push(uploadResponse);
-      this.settingState('allVideos', allVideos);
-      this.settingState('title', '');
-      this.settingState('description', '');
-      this.settingState('tags', '');
-      this.settingState('uploadingInProcess', false)
+      this.settingState({
+        'allVideos': allVideos,
+        'title': '',
+        'description': '',
+        'tags': '',
+        'uploadingInProcess': false
+    });
     }.bind(this)
   });
   this.uploadStartTime = Date.now();
-  this.settingState('uploadingInProcess', true)
+  this.settingState({'uploadingInProcess': true})
   uploader.upload();
 };
