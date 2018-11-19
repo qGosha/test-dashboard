@@ -1,5 +1,6 @@
 import {MediaUploader} from './corsUploader';
 
+var STATUS_POLLING_INTERVAL_MILLIS = 15 * 1000;
 
 export var UploadVideo = function() {
   this.tags = ['youtube-cors-upload'];
@@ -67,11 +68,54 @@ UploadVideo.prototype.uploadFile = function(file, description, title, tags, allV
         'title': '',
         'description': '',
         'tags': '',
-        'uploadingInProcess': false
+        'uploadingInProcess': false,
+        'processingInProcess': true,
+        'currentlyProcessing': this.videoId,
+        'percentageComplete': 0
     });
+    this.pollForVideoStatus();
+
     }.bind(this)
   });
   this.uploadStartTime = Date.now();
   this.settingState({'uploadingInProcess': true})
   uploader.upload();
+};
+
+
+UploadVideo.prototype.pollForVideoStatus = function() {
+  window.gapi.client.request({
+    path: '/youtube/v3/videos',
+    params: {
+      part: 'status,player',
+      id: this.videoId
+    },
+    callback: function(response) {
+      if (response.error) {
+        // The status polling failed.
+        console.log(response.error.message);
+        setTimeout(this.pollForVideoStatus.bind(this), STATUS_POLLING_INTERVAL_MILLIS);
+      } else {
+        var uploadStatus = response.items[0].status.uploadStatus;
+        switch (uploadStatus) {
+          // This is a non-final status, so we need to poll again.
+          case 'uploaded':
+            setTimeout(this.pollForVideoStatus.bind(this), STATUS_POLLING_INTERVAL_MILLIS);
+            break;
+          // The video was successfully transcoded and is available.
+          case 'processed':
+          this.settingState({
+            'processingInProcess': false,
+            'processingComplete': response.items[0].player.embedHtml,
+            'currentlyProcessing': null
+          })
+            break;
+          // All other statuses indicate a permanent transcoding failure.
+          default:
+            this.settingState({'error' : 'Transcoding failed'})
+            break;
+        }
+      }
+    }.bind(this)
+  });
 };

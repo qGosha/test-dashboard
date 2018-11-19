@@ -3,6 +3,7 @@ import { Router, Route, Switch } from 'react-router-dom';
 import { PrivateRoute, EnterRoute, ConfirmRoute } from '../helpers/routing';
 import Login from './Login';
 import Dashboard from './Dashboard';
+import Player from './Player';
 import * as firebase from 'firebase';
 import 'firebase/auth';
 import 'firebase/firestore';
@@ -68,9 +69,10 @@ class App extends Component {
     return (
       <Router history={history}>
        <Switch>
-        <PrivateRoute exact path='/' auth={auth} app={history} component={Dashboard}/>
-        <PrivateRoute exact path='/dashboard' app={history} auth={auth} component={Dashboard}/>
+        <PrivateRoute exact path='/' auth={auth}  component={Dashboard}/>
+        <PrivateRoute exact path='/dashboard'  auth={auth} component={Dashboard}/>
         <EnterRoute exact path='/login' auth={auth} component={Login}/>
+        <PrivateRoute exact path='/player' auth={auth} component={Player}/>
        </Switch>
       </Router>
     );

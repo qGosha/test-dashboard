@@ -42,7 +42,10 @@ class Dashboard extends Component {
     error: false,
     description: '',
     title: '',
-    tags: ''
+    tags: '',
+    processingInProcess: false,
+    processingComplete: false,
+    currentlyProcessing: null
   }
   getChannels = this.getChannels.bind(this);
   uploadVideo = this.uploadVideo.bind(this);
@@ -54,9 +57,6 @@ class Dashboard extends Component {
   settingState(obj) {
     this.setState(obj)
   }
-  // settingState(prop, val) {
-  //   this.setState({[prop]: val})
-  // }
 
   async uploadVideo(file) {
     const { description, title, tags, allVideos} = this.state;
@@ -105,7 +105,6 @@ class Dashboard extends Component {
 
   }
   render() {
-     const { app } = this.props;
     return (
       <div>
       <h2>Dash</h2>
@@ -166,7 +165,7 @@ class Dashboard extends Component {
       </div>
       </form>
       </div>
-      <MyVideos allVideos={this.state.allVideos} />
+      <MyVideos allVideos={this.state.allVideos} currentlyProcessing={this.state.currentlyProcessing} />
       </div>
     )
   }

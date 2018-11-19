@@ -1,20 +1,11 @@
 import { combineReducers } from 'redux';
 import { reducer as form} from 'redux-form';
 import { auth } from './auth';
-import {  routerReducer } from 'react-router-redux';
-
-import {
-    adminReducer,
-    i18nReducer
-} from 'react-admin';
-import { reducer as formReducer } from 'redux-form';
+import { player } from './player';
 
 const rootReducer = combineReducers({
-    admin: adminReducer,
-    i18n: i18nReducer('en', {}),
-    form: formReducer,
-    routing: routerReducer,
-    auth
+    auth,
+    player
   });
 
 export default rootReducer;
